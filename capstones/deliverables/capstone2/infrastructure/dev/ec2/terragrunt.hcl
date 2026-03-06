@@ -16,7 +16,7 @@ dependency "vpc" {
   mock_outputs = {
     private_subnet_ids = ["subnet-000000000", "subnet-111111111"]
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init", "plan-all", "validate-all"]
 }
 
 dependency "security_groups" {
@@ -24,7 +24,7 @@ dependency "security_groups" {
   mock_outputs = {
     security_group_ids = { ec2 = "sg-000000000" }
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init", "plan-all", "validate-all"]
 }
 
 inputs = {
