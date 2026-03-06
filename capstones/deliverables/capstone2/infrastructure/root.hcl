@@ -7,7 +7,7 @@ locals {
 
 remote_state {
   backend = "s3"
-  generate = {
+  generate = {  
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
@@ -16,7 +16,7 @@ remote_state {
     key            = "${local.project}/${local.environment}/${path_relative_to_include()}/terraform.tfstate"
     region         = local.region
     encrypt        = true
-    dynamodb_table = "iac-capstone-tfstate-lock"
+    use_lockfile   = true
   }
 }
 
