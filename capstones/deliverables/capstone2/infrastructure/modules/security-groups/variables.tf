@@ -19,11 +19,20 @@ variable "security_groups" {
   type = map(object({
     description = string
     ingress_rules = list(object({
-      description = string
-      from_port   = number
-      to_port     = number
-      ip_protocol = string
-      cidr_ipv4   = string
+      description       = string
+      from_port         = number
+      to_port           = number
+      ip_protocol       = string
+      cidr_ipv4         = optional(string)
+      referenced_sg_key = optional(string)
+    }))
+    egress_rules = list(object({
+      description       = string
+      from_port         = number
+      to_port           = number
+      ip_protocol       = string
+      cidr_ipv4         = optional(string)
+      referenced_sg_key = optional(string)
     }))
   }))
 }
