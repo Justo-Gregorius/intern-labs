@@ -28,18 +28,31 @@ dependency "security_groups" {
 }
 
 inputs = {
-  instances = {
-    for idx, subnet_id in dependency.vpc.outputs.private_subnet_ids : "web-${idx + 1}" => {
-      ami_id             = local.env.ami_id
-      instance_type      = "t3.micro"
-      subnet_id          = subnet_id
-      security_group_ids = [dependency.security_groups.outputs.security_group_ids["ec2"]]
-      user_data          = <<-EOF
-        #!/bin/bash
-        yum update -y && yum install -y httpd
-        echo "<h1>IaC Capstone - dev - web</h1>" > /var/www/html/index.html
-        systemctl start httpd && systemctl enable httpd
-      EOF
+  instances = merge(
+    # Dynamic web servers across all AZs
+    {
+      for idx, subnet_id in dependency.vpc.outputs.private_subnet_ids : "web-${idx + 1}" => {
+        ami_id             = local.env.ami_id
+        instance_type      = "t3.micro"
+        subnet_id          = subnet_id
+        security_group_ids = [dependency.security_groups.outputs.security_group_ids["ec2"]]
+        user_data          = <<-EOF
+          #!/bin/bash
+          yum update -y && yum install -y httpd
+          echo "<h1>IaC Capstone - dev - web</h1>" > /var/www/html/index.html
+          systemctl start httpd && systemctl enable httpd
+        EOF
+      }
+    },
+    # Special instance with different configuration
+    {
+      "dev-special" = {
+        ami_id             = local.env.ami_id
+        instance_type      = "t3.small" # Different type for special dev task
+        subnet_id          = dependency.vpc.outputs.private_subnet_ids[0]
+        security_group_ids = [dependency.security_groups.outputs.security_group_ids["ec2"]]
+        user_data          = "# Special dev config"
+      }
     }
-  }
+  )
 }
