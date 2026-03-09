@@ -12,7 +12,7 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "iac-capstone-tfstate-justo"
+    bucket         = "iac-capstone-tfstate-justo1"
     key            = "${local.project}/${local.environment}/${path_relative_to_include()}/terraform.tfstate"
     region         = local.region
     encrypt        = true

@@ -22,7 +22,7 @@ dependency "vpc" {
 dependency "security_groups" {
   config_path = "../security-groups"
   mock_outputs = {
-    security_group_ids = { ec2 = "sg-111111111" }
+    security_group_ids = { ec2 = "sg-1111111222" }
   }
   mock_outputs_allowed_terraform_commands = ["validate", "plan", "init", "plan-all", "validate-all"]
 }

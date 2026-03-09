@@ -54,4 +54,8 @@ resource "aws_instance" "this" {
   root_block_device {
     encrypted = true
   }
+
+  lifecycle {
+    ignore_changes = [tags["Manual"]]
+  }
 }

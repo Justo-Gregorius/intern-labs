@@ -33,6 +33,7 @@ inputs = {
     {
       for idx, subnet_id in dependency.vpc.outputs.private_subnet_ids : "web-${idx + 1}" => {
         ami_id             = local.env.ami_id
+        # ami_id             = "ami-051f8b213d23e1206"
         instance_type      = "t3.micro"
         subnet_id          = subnet_id
         security_group_ids = [dependency.security_groups.outputs.security_group_ids["ec2"]]
