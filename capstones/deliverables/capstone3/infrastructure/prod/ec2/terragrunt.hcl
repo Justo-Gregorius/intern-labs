@@ -1,0 +1,46 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+locals {
+  env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  env      = local.env_vars.locals
+}
+
+terraform {
+  source = "../../../modules//ec2"
+}
+
+dependency "subnets" {
+  config_path = "../subnets"
+  mock_outputs = {
+    subnet_ids = { "private-subnet-a" = "subnet-000000000" }
+  }
+}
+
+dependency "security_groups" {
+  config_path = "../security-groups"
+  mock_outputs = {
+    security_group_ids = { ec2 = "sg-000000000" }
+  }
+}
+
+inputs = {
+  environment = local.env.environment
+
+  instances = {
+    web = {
+      ami_id             = local.env.ami_id
+      instance_type      = "t3.micro"
+      subnet_id          = dependency.subnets.outputs.subnet_ids["private-subnet-a"]
+      security_group_ids = [dependency.security_groups.outputs.security_group_ids["ec2"]]
+      user_data          = <<-EOF
+        #!/bin/bash
+        yum update -y
+        yum install -y httpd
+        echo "<h1>Capstone Prod Server - $(hostname -f)</h1>" > /var/www/html/index.html
+        systemctl start httpd && systemctl enable httpd
+      EOF
+    }
+  }
+}
