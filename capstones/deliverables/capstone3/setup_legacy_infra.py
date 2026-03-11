@@ -73,20 +73,25 @@ def setup_environment(env, vpc_cidr, pub_a_cidr, pub_b_cidr, priv_a_cidr, priv_b
             print(f"⏩ IGW {igw_id} exists.")
 
         # 3. Subnets
-        def get_or_create_sub(cidr, az, name):
+        def get_or_create_sub(cidr, az, name, is_public=False):
             subs = ec2.describe_subnets(Filters=[{'Name': 'vpc-id', 'Values': [vpc_id]}, {'Name': 'cidr-block', 'Values': [cidr]}])['Subnets']
             if subs:
+                s_id = subs[0]['SubnetId']
                 print(f"⏩ Subnet {name} ({cidr}) exists.")
-                return subs[0]['SubnetId']
-            s = ec2.create_subnet(VpcId=vpc_id, CidrBlock=cidr, AvailabilityZone=az)['Subnet']['SubnetId']
-            create_tags(s, name, env)
-            print(f"✅ Created Subnet: {name}")
-            return s
+            else:
+                s_id = ec2.create_subnet(VpcId=vpc_id, CidrBlock=cidr, AvailabilityZone=az)['Subnet']['SubnetId']
+                create_tags(s_id, name, env)
+                print(f"✅ Created Subnet: {name}")
+            
+            if is_public:
+                ec2.modify_subnet_attribute(SubnetId=s_id, MapPublicIpOnLaunch={'Value': True})
+                print(f"  🔹 Enabled Auto-assign IP for {name}")
+            return s_id
 
-        sub_pub_a = get_or_create_sub(pub_a_cidr, f"{REGION}a", f"{env}-public-subnet-a")
-        sub_pub_b = get_or_create_sub(pub_b_cidr, f"{REGION}b", f"{env}-public-subnet-b")
-        sub_priv_a = get_or_create_sub(priv_a_cidr, f"{REGION}a", f"{env}-private-subnet-a")
-        sub_priv_b = get_or_create_sub(priv_b_cidr, f"{REGION}b", f"{env}-private-subnet-b")
+        sub_pub_a = get_or_create_sub(pub_a_cidr, f"{REGION}a", f"{env}-public-subnet-a", True)
+        sub_pub_b = get_or_create_sub(pub_b_cidr, f"{REGION}b", f"{env}-public-subnet-b", True)
+        sub_priv_a = get_or_create_sub(priv_a_cidr, f"{REGION}a", f"{env}-private-subnet-a", False)
+        sub_priv_b = get_or_create_sub(priv_b_cidr, f"{REGION}b", f"{env}-private-subnet-b", False)
 
         # 4. NAT Gateway
         nats = ec2.describe_nat_gateways(Filters=[{'Name': 'vpc-id', 'Values': [vpc_id]}, {'Name': 'state', 'Values': ['pending', 'available']}])['NatGateways']
@@ -173,10 +178,24 @@ systemctl start httpd; systemctl enable httpd
         except elbv2.exceptions.LoadBalancerNotFoundException:
             print("⌛ Creating ALB...")
             alb_arn = elbv2.create_load_balancer(Name=alb_name, Subnets=[sub_pub_a, sub_pub_b], SecurityGroups=[alb_sg], Scheme='internet-facing', Type='application')['LoadBalancers'][0]['LoadBalancerArn']
-            tg_arn = elbv2.create_target_group(Name=f"capstone-{env}-ec2-tg", Protocol='HTTP', Port=80, VpcId=vpc_id, TargetType='instance')['TargetGroups'][0]['TargetGroupArn']
-            elbv2.register_targets(TargetGroupArn=tg_arn, Targets=[{'Id': instance_id}])
-            elbv2.create_listener(LoadBalancerArn=alb_arn, Protocol='HTTP', Port=80, DefaultActions=[{'Type': 'forward', 'TargetGroupArn': tg_arn}])
             print(f"✅ Created ALB: {alb_arn}")
+
+        # Ensure ALB Target Group
+        tg_name = f"capstone-{env}-ec2-tg"
+        try:
+            tg_arn = elbv2.describe_target_groups(Names=[tg_name])['TargetGroups'][0]['TargetGroupArn']
+            print(f"⏩ Target Group {tg_name} exists.")
+        except elbv2.exceptions.TargetGroupNotFoundException:
+            tg_arn = elbv2.create_target_group(Name=tg_name, Protocol='HTTP', Port=80, VpcId=vpc_id, TargetType='instance')['TargetGroups'][0]['TargetGroupArn']
+            print(f"✅ Created TG: {tg_arn}")
+
+        elbv2.register_targets(TargetGroupArn=tg_arn, Targets=[{'Id': instance_id}])
+
+        # Ensure ALB Listener
+        listeners = elbv2.describe_listeners(LoadBalancerArn=alb_arn)['Listeners']
+        if not listeners:
+            elbv2.create_listener(LoadBalancerArn=alb_arn, Protocol='HTTP', Port=80, DefaultActions=[{'Type': 'forward', 'TargetGroupArn': tg_arn}])
+            print(f"✅ Created ALB Listener")
 
         # 9. NLB (Wait for ALB ACTIVE first!)
         nlb_name = f"capstone-{env}-nlb"
@@ -188,10 +207,24 @@ systemctl start httpd; systemctl enable httpd
             print("⌛ Creating NLB...")
             eip_nlb = ec2.allocate_address(Domain='vpc')['AllocationId']
             nlb_arn = elbv2.create_load_balancer(Name=nlb_name, SubnetMappings=[{'SubnetId': sub_pub_a, 'AllocationId': eip_nlb}], Type='network', Scheme='internet-facing')['LoadBalancers'][0]['LoadBalancerArn']
-            tg_alb_arn = elbv2.create_target_group(Name=f"capstone-{env}-alb-tg", Protocol='TCP', Port=80, VpcId=vpc_id, TargetType='alb')['TargetGroups'][0]['TargetGroupArn']
-            elbv2.register_targets(TargetGroupArn=tg_alb_arn, Targets=[{'Id': alb_arn}])
-            elbv2.create_listener(LoadBalancerArn=nlb_arn, Protocol='TCP', Port=80, DefaultActions=[{'Type': 'forward', 'TargetGroupArn': tg_alb_arn}])
             print(f"✅ Created NLB: {nlb_arn}")
+
+        # Ensure NLB Target Group
+        nlb_tg_name = f"capstone-{env}-alb-tg"
+        try:
+            tg_alb_arn = elbv2.describe_target_groups(Names=[nlb_tg_name])['TargetGroups'][0]['TargetGroupArn']
+            print(f"⏩ Target Group {nlb_tg_name} exists.")
+        except elbv2.exceptions.TargetGroupNotFoundException:
+            tg_alb_arn = elbv2.create_target_group(Name=nlb_tg_name, Protocol='TCP', Port=80, VpcId=vpc_id, TargetType='alb')['TargetGroups'][0]['TargetGroupArn']
+            print(f"✅ Created TG: {tg_alb_arn}")
+
+        elbv2.register_targets(TargetGroupArn=tg_alb_arn, Targets=[{'Id': alb_arn}])
+
+        # Ensure NLB Listener
+        listeners = elbv2.describe_listeners(LoadBalancerArn=nlb_arn)['Listeners']
+        if not listeners:
+            elbv2.create_listener(LoadBalancerArn=nlb_arn, Protocol='TCP', Port=80, DefaultActions=[{'Type': 'forward', 'TargetGroupArn': tg_alb_arn}])
+            print(f"✅ Created NLB Listener")
 
     except ClientError as e:
         print(f"❌ ERROR: {e}"); sys.exit(1)
