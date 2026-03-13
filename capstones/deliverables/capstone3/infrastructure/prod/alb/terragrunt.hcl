@@ -14,34 +14,39 @@ terraform {
 dependency "subnets" {
   config_path = "../subnets"
   mock_outputs = {
-    public_subnet_ids = ["subnet-0a6728f0e798cd872", "subnet-008069348d453dcfe"]
+    public_subnet_ids = ["subnet-0000000000", "subnet-0000000000"]
   }
 }
 
 dependency "security_groups" {
   config_path = "../security-groups"
   mock_outputs = {
-    security_group_ids = { "alb" = "sg-08f0a21aebe3d6f22" }
+    security_group_ids = { "alb" = "sg-0000000000" }
   }
 }
 
 dependency "ec2" {
   config_path = "../ec2"
   mock_outputs = {
-    instance_ids = { "web" = "i-00833ae11c84b6977" }
+    instance_ids = { "web" = "i-0000000000" }
   }
 }
 
 dependency "vpc" {
   config_path = "../vpc"
   mock_outputs = {
-    vpc_id = "vpc-0db094693e47a6d08"
+    vpc_id = "vpc-0000000000"
   }
 }
 
 inputs = {
   environment        = local.env.environment
   name               = "capstone-prod-alb"
+  access_logs = {
+    bucket  = "capstone-prod-justo-gqdw34"
+    prefix  = "alb-logs"
+    enabled = true
+  }
   vpc_id             = dependency.vpc.outputs.vpc_id
   subnet_ids         = dependency.subnets.outputs.public_subnet_ids
   security_group_ids = [dependency.security_groups.outputs.security_group_ids["alb"]]

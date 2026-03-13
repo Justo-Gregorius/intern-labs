@@ -33,3 +33,23 @@ resource "aws_s3_bucket_versioning" "this" {
     status = each.value.versioning_enabled ? "Enabled" : "Disabled"
   }
 }
+
+resource "aws_s3_bucket_policy" "this" {
+  for_each = { for k, v in var.buckets : k => v if v.policy != null }
+  bucket   = aws_s3_bucket.this[each.key].id
+  policy   = each.value.policy
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  for_each = { for k, v in var.buckets : k => v if v.noncurrent_expiry_days != null }
+  bucket   = aws_s3_bucket.this[each.key].id
+
+  rule {
+    id     = "expire-noncurrent-versions"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = each.value.noncurrent_expiry_days
+    }
+  }
+}

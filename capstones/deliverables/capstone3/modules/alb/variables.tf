@@ -63,3 +63,11 @@ variable "listeners" {
     target_group_key = string
   }))
 }
+variable "access_logs" {
+  type = object({
+    bucket  = string
+    prefix  = optional(string)
+    enabled = optional(bool, false)
+  })
+  default = null
+}

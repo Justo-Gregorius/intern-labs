@@ -40,7 +40,7 @@ inputs = {
   subnet_mappings = {
     "public-a" = {
       subnet_id     = dependency.subnets.outputs.subnet_ids["public-subnet-a"]
-      allocation_id = "eipalloc-0d15b229ba2bd69b7"
+      allocation_id = "eipalloc-021ced05048c0b900"
     }
   }
 

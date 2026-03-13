@@ -14,6 +14,8 @@ variable "tags" {
 
 variable "buckets" {
   type = map(object({
-    versioning_enabled = optional(bool, true)
+    versioning_enabled     = optional(bool, true)
+    policy                 = optional(string)
+    noncurrent_expiry_days = optional(number)
   }))
 }

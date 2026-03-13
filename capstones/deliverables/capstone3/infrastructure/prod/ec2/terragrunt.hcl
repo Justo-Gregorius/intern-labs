@@ -14,14 +14,17 @@ terraform {
 dependency "subnets" {
   config_path = "../subnets"
   mock_outputs = {
-    subnet_ids = { "private-subnet-a" = "subnet-000000000" }
+    subnet_ids = {
+      "public-subnet-a"  = "subnet-01b9ec21812851fb9"
+      "private-subnet-a" = "subnet-043a9e41961018387"
+    }
   }
 }
 
 dependency "security_groups" {
   config_path = "../security-groups"
   mock_outputs = {
-    security_group_ids = { ec2 = "sg-000000000" }
+    security_group_ids = { "ec2" = "sg-0a2d160549d6a22bd" }
   }
 }
 

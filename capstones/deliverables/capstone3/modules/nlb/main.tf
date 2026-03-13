@@ -17,11 +17,12 @@ resource "aws_lb" "this" {
 resource "aws_lb_target_group" "this" {
   for_each = var.target_groups
 
-  name                               = each.key
-  port                               = each.value.port
-  protocol                           = each.value.protocol
-  vpc_id                             = var.vpc_id
-  target_type                        = each.value.target_type
+  name        = each.key
+  port        = each.value.port
+  protocol    = each.value.protocol
+  vpc_id      = var.vpc_id
+  target_type = each.value.target_type
+
   deregistration_delay               = each.value.deregistration_delay
   proxy_protocol_v2                  = each.value.proxy_protocol_v2
   lambda_multi_value_headers_enabled = each.value.lambda_multi_value_headers_enabled
@@ -40,6 +41,16 @@ resource "aws_lb_target_group" "this" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      deregistration_delay,
+      proxy_protocol_v2,
+      lambda_multi_value_headers_enabled,
+      slow_start,
+      stickiness
+    ]
+  }
 }
 
 resource "aws_lb_target_group_attachment" "this" {
@@ -77,6 +88,14 @@ resource "aws_lb_listener" "this" {
         }
       }
     }
+
+  }
+
+  lifecycle {
+    ignore_changes = [
+      default_action[0].target_group_arn,
+      default_action[0].forward
+    ]
   }
 
   tags = var.tags

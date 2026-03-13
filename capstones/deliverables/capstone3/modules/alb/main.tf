@@ -6,6 +6,15 @@ resource "aws_lb" "this" {
   security_groups    = var.security_group_ids
   subnets            = var.subnet_ids
 
+  dynamic "access_logs" {
+    for_each = var.access_logs != null ? [var.access_logs] : []
+    content {
+      bucket  = access_logs.value.bucket
+      prefix  = access_logs.value.prefix
+      enabled = access_logs.value.enabled
+    }
+  }
+
   tags = var.tags
 }
 
@@ -33,6 +42,19 @@ resource "aws_lb_target_group" "this" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      stickiness,
+      load_balancing_cross_zone_enabled,
+      load_balancing_algorithm_type,
+      load_balancing_anomaly_mitigation,
+      target_group_health,
+      health_check,
+      target_health_state,
+      tags_all["MigrationDate"]
+    ]
+  }
 }
 
 resource "aws_lb_target_group_attachment" "this" {
@@ -56,7 +78,10 @@ resource "aws_lb_listener" "this" {
   }
 
   lifecycle {
-    ignore_changes = [default_action[0].forward]
+    ignore_changes = [
+      default_action[0].forward,
+      tags_all["MigrationDate"]
+    ]
   }
 
   tags = var.tags

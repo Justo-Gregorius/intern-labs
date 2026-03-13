@@ -21,7 +21,7 @@ dependency "subnets" {
 dependency "security_groups" {
   config_path = "../security-groups"
   mock_outputs = {
-    security_group_ids = { "alb" = "sg-017d13c99a80bd702" }
+    security_group_ids = { "alb" = "sg-0f51d8db5eb9f3f6f" }
   }
 }
 
@@ -42,6 +42,11 @@ dependency "vpc" {
 inputs = {
   environment        = local.env.environment
   name               = "capstone-dev-alb"
+  access_logs = {
+    bucket  = "capstone-dev-justo-o0iooz"
+    prefix  = "alb-logs"
+    enabled = true
+  }
   vpc_id             = dependency.vpc.outputs.vpc_id
   subnet_ids         = dependency.subnets.outputs.public_subnet_ids
   security_group_ids = [dependency.security_groups.outputs.security_group_ids["alb"]]

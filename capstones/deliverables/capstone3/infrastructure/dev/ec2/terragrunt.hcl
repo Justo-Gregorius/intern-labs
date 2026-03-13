@@ -15,8 +15,8 @@ dependency "subnets" {
   config_path = "../subnets"
   mock_outputs = {
     subnet_ids = { 
-      "public-subnet-a"  = "subnet-031554c80d082ad50"
-      "private-subnet-a" = "subnet-031554c80d082ad50"
+      "public-subnet-a"  = "subnet-0b97151b8f1f45bf4"
+      "private-subnet-a" = "subnet-08c3d7f438768df76"
     }
   }
 }
@@ -24,7 +24,7 @@ dependency "subnets" {
 dependency "security_groups" {
   config_path = "../security-groups"
   mock_outputs = {
-    security_group_ids = { "ec2" = "sg-009e9c8553da9e963" }
+    security_group_ids = { "ec2" = "sg-065265d8b0ddd554f" }
   }
 }
 

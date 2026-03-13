@@ -37,8 +37,8 @@ inputs = {
     "ec2" = {
       description = "EC2 SG for dev"
       ingress_rules = [
-        { from_port = 80, to_port = 80, ip_protocol = "tcp", source_security_group_key = "alb" },
-        { from_port = 22, to_port = 22, ip_protocol = "tcp", cidr_ipv4 = "10.0.0.0/8" }
+        { description = "HTTP from ALB", from_port = 80, to_port = 80, ip_protocol = "tcp", source_security_group_key = "alb" },
+        { description = "SSH from my IP", from_port = 22, to_port = 22, ip_protocol = "tcp", cidr_ipv4 = "158.140.170.73/32" }
       ]
     }
   }

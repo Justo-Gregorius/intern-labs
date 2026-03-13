@@ -40,7 +40,7 @@ inputs = {
   subnet_mappings = {
     "public-a" = {
       subnet_id     = dependency.subnets.outputs.subnet_ids["public-subnet-a"]
-      allocation_id = "eipalloc-06e688612f204f97f"
+      allocation_id = "eipalloc-0d2b267d77451c58c"
     }
   }
 
@@ -73,10 +73,10 @@ inputs = {
       target_group_key = "capstone-dev-alb-tg"
       forward = {
         target_groups = [{ weight = 0 }]
-        stickiness = {
-          enabled  = false
-          duration = 1
-        }
+        # stickiness = {
+        #   enabled  = false
+        #   duration = 0
+        # }
       }
     }
   }

@@ -14,8 +14,22 @@ terraform {
 inputs = {
   environment = local.env.environment
   buckets = {
-    "capstone-prod-justo-x5bxzz" = {
-      versioning_enabled = true
+    "capstone-prod-justo-gqdw34" = {
+      versioning_enabled     = true
+      noncurrent_expiry_days = 30
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Effect = "Allow"
+            Principal = {
+              AWS = "arn:aws:iam::127311923021:root"
+            }
+            Action   = "s3:PutObject"
+            Resource = "arn:aws:s3:::capstone-prod-justo-gqdw34/alb-logs/AWSLogs/711784092484/*"
+          }
+        ]
+      })
     }
   }
 }

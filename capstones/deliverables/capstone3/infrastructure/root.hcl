@@ -16,6 +16,14 @@ generate "provider" {
   contents  = <<EOF
 provider "aws" {
   region = "${local.region}"
+  default_tags {
+    tags = {
+      Project       = "${local.project}"
+      Environment   = "${local.env}"
+      MigrationDate = "${formatdate("YYYY-MM-DD", timestamp())}"
+      Owner         = "Justo"
+    }
+  }
 }
 EOF
 }
@@ -35,7 +43,7 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket       = "capstone-tfstate-justo-mvko2k"
+    bucket       = "capstone-tfstate-justo-tv70lu"
     key          = "${local.project}/${local.env}/${path_relative_to_include()}/terraform.tfstate"
     region       = local.region
     encrypt      = true
